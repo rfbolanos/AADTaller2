@@ -1,0 +1,170 @@
+---
+title: "ANÁLISIS AVANZADO DE DATOS - Taller 2"
+author: "Raúl Andrés Rodriguez - Richard Felipe Bolaños"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Librerías
+
+```{r}
+library(ISLR2)
+```
+
+## Dataset
+
+Se realiza una exploración básica del dataset autos.
+
+```{r}
+#Cargar los datos
+df <- data.frame(Auto)
+
+#Explorar 5 filas del conjunto de datos
+head(df, 5)
+```
+
+```{r}
+#Exporación basica del conjunto de datos
+summary(df[c(1,4)])
+```
+
+## Problema \# 1
+
+El conjunto de datos Auto en la librería ISLR2, utilizado en clase,
+contiene la información del rendimiento y otras variables para un total
+de 392 vehículos. Como nos dimos cuenta, la relación entre dos de sus
+variables (horsepower y mpg) es resumida de manera parsimoniosa mediante
+un polinomio global de grado 2, sin embargo un spline suavizado
+(smoothing spline) parece dar un menor error de predicción. Por otra
+parte, determinar la ubicación y cantidad de knots en el spline de
+regresión (regression spline) fue un problema que desincentivó su uso.
+El método de validación externa utilizado para comprar los modelos fue
+validación regular.
+
+### Punto No 1.
+
+Separe aleatoriamente (pero guarde la semilla) su conjunto de datos en
+dos partes:
+
+-   Entrenamiento: 90 % de los autos.
+
+-   Prueba: 10 % de los autos.
+
+```{r}
+# Establecer la semilla para reproducibilidad
+set.seed(123)
+
+#Se genera un vector ind de longitud igual al número de filas de df. Cada elemento de ind es una muestra aleatoria de tamaño 1 de los números 1 y 2, con una probabilidad de selección especificada por el vector prob.
+ind <- sample(2, nrow(df), replace = TRUE, prob = c(0.9, 0.1))
+
+#Aquí se seleccionan las filas de df donde ind es igual a 1, generando el conjunto de entrenamiento
+df_train <- df[ind == 1, ]
+
+#Aquí se seleccionan las filas de df donde ind es igual a 2, generando el conjunto de prueba
+df_test <- df[ind == 2, ] 
+
+```
+
+### Punto No 2.
+
+Usando los datos de entrenamiento Mediante validaci´on cruzada en 10
+folds, determine el n´umero ´optimo de knots para el problema de
+regresi´on spline. Considere como n´umero de posible de knots 1,...,10,
+igualmente espaciados en el rango de la variable horsepower. ¿Qu´e
+modelo (es decir, cual valor de knot con k = 1, ..., 10) resulta en un
+menor ECM de predici´on?
+
+```{r}
+
+```
+
+### Punto No 3.
+
+Usando los datos de entrenamiento, determine el mejor modelo basado en
+base de funciones Compare el poder de predicci´on de los modelos:
+polinomio grado 2 global, spline suavizado y del modelo de regresi´on
+spline ´optimo (encontrado en el punto anterior) utilizando validaci´on
+cruzada en 10 folds. ¿Cu´al de los tres modelos seleccionar´ıa basado en
+el ECM de predici´on?
+
+```{r}
+
+```
+
+### Punto No 4.
+
+Usando los datos de entrenamiento, determine el mejor modelo basado en
+regresi´on local Determine la regresi´on polinomial local con kernel
+gaussiano que resulte en menor error de predicci´on: regresi´on de grado
+1 o 2. Use el ancho de banda óptimo dado por defecto por la función
+loess().
+
+```{r}
+
+```
+
+### Punto No 5.
+
+Usando los datos de entrenamiento y de prueba, determine el mejor de los
+tres paradigmas de modelamiento Ajuste el mejor modelo basado en base de
+funciones, el mejor modelo basado en regresión local y un polinomio
+global de grado dos con los datos de entrenamiento y calcule el ECM de
+prueba para cada modelo.
+
+```{r}
+
+```
+
+### Punto No 6.
+
+Repita (1) - (5) un total de 10 veces de manera que en el paso (1)
+conforme una nueva muestra de validación cruzada, esto le permitirá
+obtener 10 ECM de prueba para cada paradigma de modelamiento. Grafique
+las tres distribuciones del ECM de prueba y responda ¿Cuál acercamiento
+seleccionaría basado en el ECM de predición: basado en base de
+funciones, basado en regresión local o polinomial global?
+
+```{r}
+
+```
+
+## Problema \# 2
+
+En el contexto de análisis de datos funcionales se tiene una colección
+finita de observaciones ruidosas, donde para cada individuo, estas se
+asumen provenientes de una curva de dimensión infinita la cual es
+evaluada en puntos de un intervalo determinado. Para la i-ésima unidad
+estadística se tiene un conjunto de ni observaciones discretizadas xi1,
+..., xij , ..., xin de la función xi en los puntos ti1, ..., tij , ...,
+tin con xij ∈ R, tij ∈ T y T un intervalo que representa el dominio
+sobre los reales donde se definen los datos funcionales.
+
+### Punto No 7.
+
+Escriba el estimador de Nadarya–Watson para la i-ésima unidad
+estadística en t, es decir, x(t).
+
+```{r}
+
+```
+
+### Punto No 8.
+
+Escriba el estimador de Nadarya–Watson para la función media en t, es
+decir, ˆµ(t).
+
+```{r}
+
+```
