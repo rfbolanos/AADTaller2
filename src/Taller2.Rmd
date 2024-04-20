@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(ISLR2)
+
 ```
 
 ## Dataset
@@ -79,15 +80,72 @@ df_test <- df[ind == 2, ]
 
 ### Punto No 2.
 
-Usando los datos de entrenamiento Mediante validaci´on cruzada en 10
-folds, determine el n´umero ´optimo de knots para el problema de
-regresi´on spline. Considere como n´umero de posible de knots 1,...,10,
-igualmente espaciados en el rango de la variable horsepower. ¿Qu´e
-modelo (es decir, cual valor de knot con k = 1, ..., 10) resulta en un
-menor ECM de predici´on?
+Usando los datos de entrenamiento Mediante validación cruzada en 10
+folds, determine el número óptimo de knots para el problema de regresión
+spline. Considere como número de posible de knots 1,...,10, igualmente
+espaciados en el rango de la variable horsepower. ¿Qué modelo (es decir,
+cual valor de knot con k = 1, ..., 10) resulta en un menor ECM de
+predición?
 
 ```{r}
 
+# Seleccionar variables
+data <- df_train[, c("horsepower", "mpg")]
+
+# Definir la función de regresión spline
+splineReg <- function(data, k) {
+  # Crear objeto spline
+  splineObject <- smooth.spline(data$horsepower, data$mpg)
+  
+  # Predecir mpg
+  predictions <- predict(splineObject, data$horsepower)
+  
+  return(splineObject)
+}
+
+
+#Validación cruzada
+
+# Establecer número de folds
+folds <- 10
+
+# Definir vector de posibles knots
+knots <- 1:10
+
+# Inicializar vector para almacenar ECMs
+rmseCV <- rep(NA, length(knots))
+
+# Recorrer cada valor de k
+for (i in 1:length(knots)) {
+  # Inicializar vector para almacenar ECMs por fold
+  rmseFold <- rep(NA, folds)
+
+  # Recorrer cada fold
+  for (j in 1:folds) {
+    # Obtener índice del fold actual
+    index <- rep(1:folds, length(data))
+    index[sample(folds, length(data))] <- j
+
+    # Dividir el dataset en training y testing
+    dataTrain <- data[index == j, ]
+    dataTest <- data[index != j, ]
+
+    # Entrenar el modelo spline
+    splineFit <- splineReg(dataTrain, knots[i])
+
+    # Predecir mpg en el conjunto de testing
+    predictions <- predict(splineFit, dataTest$mpg)
+
+    # Calcular ECM en el conjunto de testing
+    rmseFold[j] <- mean((predictions$y - dataTest$mpg)^2)
+  }
+
+  # Calcular ECM CV promedio
+  rmseCV[i] <- mean(rmseFold)
+
+  # Imprimir información
+  print(paste0("k =", knots[i], ", RMSE CV =", rmseCV[i]))
+}
 ```
 
 ### Punto No 3.
