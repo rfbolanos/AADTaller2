@@ -21,6 +21,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(ISLR2)
+library(splines)
+library(boot)
 
 ```
 
@@ -65,7 +67,7 @@ dos partes:
 
 ```{r}
 # Establecer la semilla para reproducibilidad
-set.seed(123)
+set.seed(12)
 
 #Se genera un vector ind de longitud igual al número de filas de df. Cada elemento de ind es una muestra aleatoria de tamaño 1 de los números 1 y 2, con una probabilidad de selección especificada por el vector prob.
 ind <- sample(2, nrow(df), replace = TRUE, prob = c(0.9, 0.1))
@@ -80,7 +82,7 @@ df_test <- df[ind == 2, ]
 
 ### Punto No 2.
 
-Usando los datos de entrenamiento Mediante validación cruzada en 10
+**Usando los datos de entrenamiento** Mediante validación cruzada en 10
 folds, determine el número óptimo de knots para el problema de regresión
 spline. Considere como número de posible de knots 1,...,10, igualmente
 espaciados en el rango de la variable horsepower. ¿Qué modelo (es decir,
@@ -88,76 +90,110 @@ cual valor de knot con k = 1, ..., 10) resulta en un menor ECM de
 predición?
 
 ```{r}
+set.seed(12)
+data1 <- df_train[, c("horsepower", "mpg")]
+cv.error.10 <- NULL
 
-# Seleccionar variables
-data <- df_train[, c("horsepower", "mpg")]
 
-# Definir la función de regresión spline
-splineReg <- function(data, k) {
-  # Crear objeto spline
-  splineObject <- smooth.spline(data$horsepower, data$mpg)
-  
-  # Predecir mpg
-  predictions <- predict(splineObject, data$horsepower)
-  
-  return(splineObject)
+for (i in 1:10) {
+  glm.fit <- glm(mpg ~ bs(horsepower,knots=i,  df = 3), data = data1)
+
+  cv.error.10[i] <- cv.glm(data1,glm.fit,K = 10)$delta[1]
+
+  print(cv.error.10[i])
+
+  print(paste0("knot =", i, ", ECM CV =", cv.error.10[i]))
 }
 
+# Encuentra el número óptimo de knots con el menor ECM
+optimal_knots <- which.min(cv.error.10)
 
-#Validación cruzada
+cat("El número óptimo de knots es:", optimal_knots, "\n")
+cat("El ECM mínimo es:", min(cv.error.10), "\n")
 
-# Establecer número de folds
-folds <- 10
 
-# Definir vector de posibles knots
-knots <- 1:10
-
-# Inicializar vector para almacenar ECMs
-rmseCV <- rep(NA, length(knots))
-
-# Recorrer cada valor de k
-for (i in 1:length(knots)) {
-  # Inicializar vector para almacenar ECMs por fold
-  rmseFold <- rep(NA, folds)
-
-  # Recorrer cada fold
-  for (j in 1:folds) {
-    # Obtener índice del fold actual
-    index <- rep(1:folds, length(data))
-    index[sample(folds, length(data))] <- j
-
-    # Dividir el dataset en training y testing
-    dataTrain <- data[index == j, ]
-    dataTest <- data[index != j, ]
-
-    # Entrenar el modelo spline
-    splineFit <- splineReg(dataTrain, knots[i])
-
-    # Predecir mpg en el conjunto de testing
-    predictions <- predict(splineFit, dataTest$mpg)
-
-    # Calcular ECM en el conjunto de testing
-    rmseFold[j] <- mean((predictions$y - dataTest$mpg)^2)
-  }
-
-  # Calcular ECM CV promedio
-  rmseCV[i] <- mean(rmseFold)
-
-  # Imprimir información
-  print(paste0("k =", knots[i], ", RMSE CV =", rmseCV[i]))
-}
 ```
 
 ### Punto No 3.
 
-Usando los datos de entrenamiento, determine el mejor modelo basado en
-base de funciones Compare el poder de predicci´on de los modelos:
-polinomio grado 2 global, spline suavizado y del modelo de regresi´on
-spline ´optimo (encontrado en el punto anterior) utilizando validaci´on
-cruzada en 10 folds. ¿Cu´al de los tres modelos seleccionar´ıa basado en
-el ECM de predici´on?
+**Usando los datos de entrenamiento, determine el mejor modelo basado en
+base de funciones** Compare el poder de predicción de los modelos:
+polinomio grado 2 global, spline suavizado y del modelo de regresión
+spline óptimo (encontrado en el punto anterior) utilizando validación
+cruzada en 10 folds. ¿Cuál de los tres modelos seleccionaría basado en
+el ECM de predición?
 
 ```{r}
+
+# Establecer la semilla
+set.seed(12)
+
+# Seleccionar datos
+data <- df_train[, c("horsepower", "mpg")]
+
+# Inicializar vector para almacenar los errores
+cv.error.10 <- NULL
+
+
+
+# Polinomnio grado 2
+glm.fit <- glm (mpg ~ poly (horsepower , 2), data = df_train)
+cv.error.10 <- cv.glm(df_train,glm.fit,K = 10)$delta[1]
+
+print(cv.error.10)
+
+
+
+
+# Número de folds para la validación cruzada
+num_folds <- 10
+
+# Número de puntos de anclaje (knots) para smooth.spline
+knots <- 4:13
+
+# Inicializar vector para almacenar ECMs
+ECMCV<- NULL
+  
+for (j in 1:length(knots)) {
+  
+  # División de los datos en folds
+  fold_indices <- sample(rep(1:num_folds, length.out = nrow(data)))
+
+  # Realizar la validación cruzada
+  for (i in 1:num_folds) {
+    # Divide los datos en conjunto de entrenamiento y prueba
+    test_indices <- which(fold_indices == i)
+    train_data <- data[-test_indices, ]
+    test_data <- data[test_indices, ]
+  
+    # Ajustar smooth.spline en el conjunto de entrenamiento
+    spline_fit<-smooth.spline(train_data$horsepower,train_data$mpg,nknots=knots[j])
+  
+    # Predecir en el conjunto de prueba
+    predicted <- predict(spline_fit, test_data$horsepower)$y
+  
+    # Calcular el error cuadrático medio (ECM)
+    cv.error.10[i] <- mean((test_data$mpg - predicted)^2)
+  }
+  
+  # Calcular ECM CV promedio
+  ECMCV[j]<- mean(cv.error.10)
+
+    # Imprimir información
+  print(paste0("k =", knots[j], ", ECM CV =", ECMCV[j]))
+}
+
+# Encuentra el número óptimo de knots con el menor ECM
+optimal_knots <- knots[which.min(ECMCV)]
+
+# Imprime los resultados
+cat("El número óptimo de knots es:", optimal_knots, "\n")
+cat("El ECM mínimo es:", min(ECMCV), "\n")
+
+
+
+
+
 
 ```
 
