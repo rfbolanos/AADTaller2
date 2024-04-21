@@ -134,61 +134,42 @@ data <- df_train[, c("horsepower", "mpg")]
 # Inicializar vector para almacenar los errores
 cv.error.10 <- NULL
 
-
-
-# Polinomnio grado 2
-glm.fit <- glm (mpg ~ poly (horsepower , 2), data = df_train)
-cv.error.10 <- cv.glm(df_train,glm.fit,K = 10)$delta[1]
-
-print(cv.error.10)
-
-
-
-
 # Número de folds para la validación cruzada
 num_folds <- 10
 
-# Número de puntos de anclaje (knots) para smooth.spline
-knots <- 4:13
 
-# Inicializar vector para almacenar ECMs
-ECMCV<- NULL
-  
-for (j in 1:length(knots)) {
-  
-  # División de los datos en folds
-  fold_indices <- sample(rep(1:num_folds, length.out = nrow(data)))
 
-  # Realizar la validación cruzada
-  for (i in 1:num_folds) {
+# -----------Polinomnio grado 2-----------
+glm.fit <- glm (mpg ~ poly (horsepower , 2), data = df_train)
+cv.error.10 <- cv.glm(df_train,glm.fit,K = num_folds)$delta[1]
+
+cat("El ECM del modelo polinomio grado 2 es:", cv.error.10, "\n")
+
+
+
+
+# -----------Spline suavizado-----------
+# División de los datos en folds
+fold_indices <- sample(rep(1:num_folds, length.out = nrow(data)))
+
+# Realizar la validación cruzada
+for (i in 1:num_folds) {
     # Divide los datos en conjunto de entrenamiento y prueba
     test_indices <- which(fold_indices == i)
     train_data <- data[-test_indices, ]
     test_data <- data[test_indices, ]
   
     # Ajustar smooth.spline en el conjunto de entrenamiento
-    spline_fit<-smooth.spline(train_data$horsepower,train_data$mpg,nknots=knots[j])
+    spline_fit<-smooth.spline(train_data$horsepower,train_data$mpg)
   
     # Predecir en el conjunto de prueba
     predicted <- predict(spline_fit, test_data$horsepower)$y
   
     # Calcular el error cuadrático medio (ECM)
     cv.error.10[i] <- mean((test_data$mpg - predicted)^2)
-  }
-  
-  # Calcular ECM CV promedio
-  ECMCV[j]<- mean(cv.error.10)
-
-    # Imprimir información
-  print(paste0("k =", knots[j], ", ECM CV =", ECMCV[j]))
 }
-
-# Encuentra el número óptimo de knots con el menor ECM
-optimal_knots <- knots[which.min(ECMCV)]
-
 # Imprime los resultados
-cat("El número óptimo de knots es:", optimal_knots, "\n")
-cat("El ECM mínimo es:", min(ECMCV), "\n")
+cat("El ECM del modelo spline suavizado es:", mean(cv.error.10), "\n")
 
 
 
@@ -200,9 +181,9 @@ cat("El ECM mínimo es:", min(ECMCV), "\n")
 ### Punto No 4.
 
 Usando los datos de entrenamiento, determine el mejor modelo basado en
-regresi´on local Determine la regresi´on polinomial local con kernel
-gaussiano que resulte en menor error de predicci´on: regresi´on de grado
-1 o 2. Use el ancho de banda óptimo dado por defecto por la función
+regresión local Determine la regresión polinomial local con kernel
+gaussiano que resulte en menor error de predicción: regresión de grado 1
+o 2. Use el ancho de banda óptimo dado por defecto por la función
 loess().
 
 ```{r}
