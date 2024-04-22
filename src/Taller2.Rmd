@@ -15,11 +15,15 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(warn = -1)
+
 ```
 
 ## Librerías
 
 ```{r}
+
+# Cargar las librerias a utilizar
 library(ISLR2)
 library(splines)
 library(boot)
@@ -66,17 +70,23 @@ dos partes:
 -   Prueba: 10 % de los autos.
 
 ```{r}
+
 # Establecer la semilla para reproducibilidad
 set.seed(12)
 
-#Se genera un vector ind de longitud igual al número de filas de df. Cada elemento de ind es una muestra aleatoria de tamaño 1 de los números 1 y 2, con una probabilidad de selección especificada por el vector prob.
+# Generar un vector ind de longitud igual al número de filas de df. Cada elemento de ind es una muestra aleatoria de tamaño 1 de los números 1 y 2, con una probabilidad de selección especificada por el vector prob.
 ind <- sample(2, nrow(df), replace = TRUE, prob = c(0.9, 0.1))
 
-#Aquí se seleccionan las filas de df donde ind es igual a 1, generando el conjunto de entrenamiento
+# Seleccionar las filas de df donde ind es igual a 1, generando el conjunto de entrenamiento
 df_train <- df[ind == 1, ]
 
-#Aquí se seleccionan las filas de df donde ind es igual a 2, generando el conjunto de prueba
+sprintf ("Tamaño conjunto de entrenamiento: %d", nrow(df_train))
+
+# Seleccionan las filas de df donde ind es igual a 2, generando el conjunto de prueba
 df_test <- df[ind == 2, ] 
+
+sprintf ("Tamaño conjunto de prueba: %d", nrow(df_test))
+
 
 ```
 
@@ -89,29 +99,29 @@ espaciados en el rango de la variable horsepower. ¿Qué modelo (es decir,
 cual valor de knot con k = 1, ..., 10) resulta en un menor ECM de
 predición?
 
-```{r}
+```{r warning = FALSE}
+
+# Establecer la semilla para reproducibilidad
 set.seed(12)
+
+# Definir variables
 data1 <- df_train[, c("horsepower", "mpg")]
 cv.error.10 <- NULL
 
-
+# Establecer ciclo para los 10 nkots y el cross-validation
 for (i in 1:10) {
   glm.fit <- glm(mpg ~ bs(horsepower,knots=i,  df = 3), data = data1)
-
   cv.error.10[i] <- cv.glm(data1,glm.fit,K = 10)$delta[1]
-
-  print(cv.error.10[i])
 
   print(paste0("knot =", i, ", ECM CV =", cv.error.10[i]))
 }
 
-# Encuentra el número óptimo de knots con el menor ECM
+# Encontrar el número óptimo de knots con el menor ECM
 optimal_knots <- which.min(cv.error.10)
 
+# Encontrar el número óptimo de knots con el menor ECM
 cat("El número óptimo de knots es:", optimal_knots, "\n")
-cat("El ECM mínimo es:", min(cv.error.10), "\n")
-
-
+cat("El ECM mínimo es:", ECMRS<-min(cv.error.10), "\n")
 ```
 
 ### Punto No 3.
@@ -125,18 +135,21 @@ el ECM de predición?
 
 ```{r}
 
-# Establecer la semilla
+# Establecer la semilla para reproducibilidad
 set.seed(12)
 
 # Seleccionar datos
 data <- df_train[, c("horsepower", "mpg")]
+
+# Mostrar el ECM del modelo del punto # 2
+cat("El ECM del modelo regresion spline es:", ECMRS, "\n")
+
 
 # Inicializar vector para almacenar los errores
 cv.error.10 <- NULL
 
 # Número de folds para la validación cruzada
 num_folds <- 10
-
 
 
 # -----------Polinomnio grado 2-----------
@@ -146,9 +159,11 @@ cv.error.10 <- cv.glm(df_train,glm.fit,K = num_folds)$delta[1]
 cat("El ECM del modelo polinomio grado 2 es:", cv.error.10, "\n")
 
 
-
+# Inicializar vector para almacenar los errores
+cv.error.10 <- NULL
 
 # -----------Spline suavizado-----------
+#NOTA: Se ejecuta con en numero optimo de Knots del punto # 2
 # División de los datos en folds
 fold_indices <- sample(rep(1:num_folds, length.out = nrow(data)))
 
@@ -160,7 +175,7 @@ for (i in 1:num_folds) {
     test_data <- data[test_indices, ]
   
     # Ajustar smooth.spline en el conjunto de entrenamiento
-    spline_fit<-smooth.spline(train_data$horsepower,train_data$mpg)
+    spline_fit<-smooth.spline(train_data$horsepower,train_data$mpg,nknots=optimal_knots)
   
     # Predecir en el conjunto de prueba
     predicted <- predict(spline_fit, test_data$horsepower)$y
@@ -170,11 +185,6 @@ for (i in 1:num_folds) {
 }
 # Imprime los resultados
 cat("El ECM del modelo spline suavizado es:", mean(cv.error.10), "\n")
-
-
-
-
-
 
 ```
 
@@ -188,6 +198,38 @@ loess().
 
 ```{r}
 
+# Establecer la semilla para reproducibilidad
+set.seed(12)
+
+# Seleccionar datos
+data <- df_train[, c("horsepower", "mpg")]
+
+
+# Ajusta un modelo LOESS con ancho de banda óptimo
+model_loess_1 <- loess(mpg ~ horsepower, data = data, degree = 1)
+model_loess_2 <- loess(mpg ~ horsepower, data = data, degree = 2)
+
+# Calcula los errores de predicción para ambos modelos
+predictions_1 <- predict(model_loess_1, newdata = data)
+predictions_2 <- predict(model_loess_2, newdata = data)
+
+error_1 <- sum((data$mpg - predictions_1)^2)
+error_2 <- sum((data$mpg - predictions_2)^2)
+
+# Compara los errores y selecciona el mejor modelo
+if (error_1 < error_2) {
+  best_model <- model_loess_1
+  best_degree <- 1
+} else {
+  best_model <- model_loess_2
+  best_degree <- 2
+}
+
+# Visualiza los resultados
+plot(data$horsepower, data$mpg, main = "Regresión Polinomial Local (LOESS)", xlab = "x", ylab = "y")
+lines(data$horsepower, predict(best_model), col = "red", lwd = 2)
+legend("topright", legend = paste("Grado", best_degree), col = "red", lwd = 2)
+
 ```
 
 ### Punto No 5.
@@ -199,6 +241,8 @@ global de grado dos con los datos de entrenamiento y calcule el ECM de
 prueba para cada modelo.
 
 ```{r}
+
+
 
 ```
 
