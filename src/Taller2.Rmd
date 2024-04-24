@@ -21,7 +21,7 @@ options(warn = -1)
 
 ## Librerías
 
-```{r}
+```{r, warning = FALSE }
 
 # Cargar las librerias a utilizar
 library(ISLR2)
@@ -288,6 +288,67 @@ funciones, basado en regresión local o polinomial global?
 
 ```{r}
 
+# Generar datos de ejemplo
+set.seed(12)
+x <- df[, c("horsepower")]
+y <- df[, c("mpg")]
+
+# Número de iteraciones de validación cruzada
+n_iter <- 10
+
+# Función para calcular ECM
+calc_ecm <- function(y_true, y_pred) {
+  mean((y_true - y_pred)^2)
+}
+
+# Función para realizar validación cruzada y obtener ECM
+cross_validate <- function(model, x, y, n_iter) {
+  ecm <- numeric(n_iter)
+  for (i in 1:n_iter) {
+    # Dividir datos en conjuntos de entrenamiento y validación
+    idx <- sample(length(x), length(x), replace = FALSE)
+    x_train <- x[idx[-1]]
+    y_train <- y[idx[-1]]
+    x_valid <- x[idx[1]]
+    y_valid <- y[idx[1]]
+    
+    # Ajustar el modelo a los datos de entrenamiento
+    fit <- model(x_train, y_train)
+    
+    # Predecir con el modelo ajustado en los datos de validación
+    y_pred <- predict(fit, newdata = data.frame(x = x_valid))
+    
+    # Calcular ECM para esta iteración
+    ecm[i] <- calc_ecm(y_valid, y_pred)
+  }
+  return(ecm)
+}
+
+# Ajustar modelo de regresión spline
+spline_model <- function(x, y) glm(y ~ bs(x, knots=8,  df = 3),data = df)
+
+# Ajustar modelo de regresión polinomial de grado 2
+poly_model <- function(x, y) glm(y ~ poly(x, 2),data=df)
+
+# Ajustar modelo LOESS
+loess_model <- function(x, y) loess(y ~ x,data=df, degree=2)
+
+
+# Realizar validación cruzada para cada modelo
+spline_ecm <- cross_validate(spline_model, x, y, n_iter)
+poly_ecm <- cross_validate(poly_model, x, y, n_iter)
+loess_ecm <- cross_validate(loess_model, x, y, n_iter)
+
+# Graficar distribuciones de ECM
+par(mfrow = c(1, 3))
+hist(spline_ecm, main = "Regresión Spline", xlab = "ECM", col = "skyblue")
+hist(poly_ecm, main = "Regresión Polinomial de Grado 2", xlab = "ECM", col = "salmon")
+hist(loess_ecm, main = "Regresión LOESS", xlab = "ECM", col = "lightgreen")
+
+# Imprimir resumen de ECM
+cat("ECM promedio (spline):", mean(spline_ecm), "\n")
+cat("ECM promedio (polinomial):", mean(poly_ecm), "\n")
+cat("ECM promedio (LOESS):", mean(loess_ecm), "\n")
 ```
 
 ## Problema \# 2
@@ -307,8 +368,6 @@ Escriba el estimador de Nadarya–Watson para la i-ésima unidad
 estadística en t, es decir, x(t).
 
 $$\hat{x}_i(t) = \frac{\frac{1}{n} \sum_{j=1}^{n_i} K \left( \frac{t_{ini} - t}{h} \right) x_{ij}}{\frac{1}{n} \sum_{j=1}^{n_i} K \left( \frac{t_{ini} - t}{h} \right)}$$
-
-
 
 ### Punto No 8.
 
