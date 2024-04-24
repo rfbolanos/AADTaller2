@@ -240,8 +240,39 @@ funciones, el mejor modelo basado en regresión local y un polinomio
 global de grado dos con los datos de entrenamiento y calcule el ECM de
 prueba para cada modelo.
 
-```{r}
+```{r, warning=FALSE}
 
+
+# Definir variables
+dataTr <- df_train[, c("horsepower", "mpg")]
+dataTe <- df_test[, c("horsepower", "mpg")]
+
+#---- Modelo basado en base de funciones
+model_spline <- glm(mpg ~ bs(horsepower,knots=8, df = 3), data = dataTr)
+predictions <- predict(model_spline, newdata = dataTe)
+residuals <- dataTe$mpg - predictions
+# Calcula el Error Cuadrático Medio (ECM)
+MSE <- mean(residuals^2)
+# Imprime el resultado
+cat("Modelo en base de funciones: Error Cuadrático Medio (ECM) es:", MSE, "\n")  
+
+#----Modelo basado en regresion local
+model_loess <- loess(mpg ~ horsepower, data = dataTr, degree = 2)
+predictions <- predict(model_loess, newdata = dataTe)
+residuals <- dataTe$mpg - predictions
+# Calcula el Error Cuadrático Medio (ECM)
+MSE <- mean(residuals^2)
+# Imprime el resultado
+cat("Modelo regresion local: Error Cuadrático Medio (ECM) es:", MSE, "\n")  
+
+#---- Polinomio global de grado dos
+model_poly2 <- glm (mpg ~ poly (horsepower , 2), data = dataTr)
+predictions <- predict(model_poly2, newdata = dataTe)
+residuals <- dataTe$mpg - predictions
+# Calcula el Error Cuadrático Medio (ECM)
+MSE <- mean(residuals^2)
+# Imprime el resultado
+cat("Polinomio global grado 2: Error Cuadrático Medio (ECM) es:", MSE, "\n")  
 
 
 ```
@@ -275,15 +306,14 @@ sobre los reales donde se definen los datos funcionales.
 Escriba el estimador de Nadarya–Watson para la i-ésima unidad
 estadística en t, es decir, x(t).
 
-```{r}
+$$\hat{x}_i(t) = \frac{\frac{1}{n} \sum_{j=1}^{n_i} K \left( \frac{t_{ini} - t}{h} \right) x_{ij}}{\frac{1}{n} \sum_{j=1}^{n_i} K \left( \frac{t_{ini} - t}{h} \right)}$$
 
-```
+
 
 ### Punto No 8.
 
 Escriba el estimador de Nadarya–Watson para la función media en t, es
 decir, ˆµ(t).
 
-```{r}
-
-```
+$$\hat{\mu}(t) = \frac{1}{N} \sum_{i=1}^{k} \frac{  \frac{1}{N_k}  \sum_{j=1}^{n_{ik}} K \left( \frac{t_{inik} - t_k}{h_k} \right) x_{ijk}}{ \frac{1}{N_k}   \sum_{j=1}^{n_{ik}} K \left( \frac{t_{inik} - t_k}{h_k} \right)}
+  $$
