@@ -230,9 +230,10 @@ plot(data$horsepower, data$mpg, main = "Regresión Polinomial Local (LOESS)", xl
 lines(data$horsepower, predict(best_model), col = "red", lwd = 2)
 legend("topright", legend = paste("Grado", best_degree), col = "red", lwd = 2)
 
-print("El resultado da como ancho de banda óptimo el grado 2")
 
 ```
+
+El resultado da como ancho de banda óptimo el grado 2
 
 ### Punto No 5.
 
